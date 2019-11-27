@@ -4,10 +4,33 @@ const inquirer = require("inquirer");
 const HTML5ToPDF = require("html5-to-pdf")
 const path = require("path")
 inquirer
-    .prompt({
-        message: "Enter your GitHub username:",
-        name: "username"
-    })
+    .prompt([
+        {
+            type: "input",
+            message: "What is your user name?",
+            name: "username"
+        },
+        {
+            type: "input",
+            message: "What is your location?",
+            name: "location"
+        },
+        {
+            type: "input",
+            message: "What is your bio?",
+            name: "bio"
+        },
+        {
+            type: "input",
+            message: "What is your linkedIn URL?",
+            name: "linkedinUrl"
+        },
+        {
+            type: "input",
+            message: "What is your github URL?",
+            name: "githubUrl"
+        }
+    ])
     .then(function ({ username }) {
         const queryUrl = `https://api.github.com/users/${username}/repos?per_page=100`;
 
