@@ -31,24 +31,47 @@ inquirer
             type: "input",
             message: "What is your github URL?",
             name: "githubUrl"
-        }
+        },
     ])
-    .then(response => {
+    .then(answer => {
         /*
         {username, location, bio, linkedinUrl, githubUrl}
         */
-        const userRepositoryURL = 'https://github.com/' + response.username + '?tab=repositories';
+        const userRepositoryURL = 'https://github.com/' + answer.username + '?tab=repositories';
 
         axios.get(userRepositoryURL)
             .then(function (response) {
                 // handle success
                 //console.log("Axios response:");
                 //console.log(response);
-                const $ = cheerio.load(response);
+                const $ = cheerio.load(response.data);
 
-                const nameTag = $('title');
-                console.log("nameTag:");
-                console.log(nameTag.text());
+                const div = $('#user-repositories-list');
+                console.log("div:");
+                const numOfPublicRepos = div.children("ul").children().length;
+                console.log("Number of Public Repositories: " + numOfPublicRepos);
+
+                const avatarURL = $(".user-profile-mini-avatar").children("img").attr("src");
+                answer.avatarURL = avatarURL;
+
+                const htmlTemplate = generateHtml(answer);
+
+                fs.writeFile("index.html", htmlTemplate, () => {
+                    const run = async () => {
+                        const html5ToPDF = new HTML5ToPDF({
+                            inputPath: path.join(__dirname, "index.html"),
+                            outputPath: path.join(__dirname, "great.pdf"),
+                            options: { printBackground: true }
+                        });
+                        await html5ToPDF.start();
+                        await html5ToPDF.build();
+                        await html5ToPDF.close();
+                        console.log("DONE");
+                        process.exit(0);
+                    };
+                    return run();
+                });
+
             })
             .catch(function (error) {
                 // handle error
@@ -58,29 +81,12 @@ inquirer
                 // always executed
             });
 
-        /*
-        console.log(response);
-        const htmlTemplate = generateHtml(response);
-
-        fs.writeFile("index.html", htmlTemplate, () => {
-            const run = async () => {
-                const html5ToPDF = new HTML5ToPDF({
-                    inputPath: path.join(__dirname, "index.html"),
-                    outputPath: path.join(__dirname, "great.pdf"),
-                    options: { printBackground: true }
-                });
-                await html5ToPDF.start();
-                await html5ToPDF.build();
-                await html5ToPDF.close();
-                console.log("DONE");
-                process.exit(0);
-            };
-            return run();
-        });*/
     });
 
-function generateHtml(response) {
+function generateHtml(answer) {
     console.log("generateHtml()");
+    console.log(answer.username);
+    console.log(answer.location);
     const htmlStr = `
     <!DOCTYPE html>
     <html lang="en">
@@ -91,11 +97,12 @@ function generateHtml(response) {
         <title>Document</title>
     </head>
     <body>
-        <div>Name : ${response.username}</div>
-        <div>Location : ${response.location}</div>
-        <div>Bio : ${response.bio}</div>
-        <div>linkedinUrl : ${response.linkedinUrl}</div>
-        <div>githubUrl : ${response.githubUrl}</div>
+        <div>Name : ${answer.username}</div>
+        <div>Location : ${answer.location}</div>
+        <div>Bio : ${answer.bio}</div>
+        <div>linkedinUrl : ${answer.linkedinUrl}</div>
+        <div>githubUrl : ${answer.githubUrl}</div>
+        <img src='${answer.avatarURL}'/>
     </body>
     </html>
     `;
